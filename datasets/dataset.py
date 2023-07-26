@@ -192,6 +192,7 @@ class MnistDataModule(pl.LightningDataModule):
         batch_size: int = 64,
         device: str = "cuda",
         num_workers: int = 1,
+        batches_per_epoch: int = 100
     ):
         super().__init__()
         self.img_dir = img_dir
@@ -205,6 +206,7 @@ class MnistDataModule(pl.LightningDataModule):
             random_color,
             T.Normalize([0.5],[0.5])
         ])
+        self.batches_per_epoch = batches_per_epoch
 
     def prepare_data(self):
         # download
@@ -234,7 +236,7 @@ class MnistDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.mnist_train, replacement=True, num_samples=self.batch_size * 1000
+                self.mnist_train, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
 
@@ -246,7 +248,7 @@ class MnistDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.mnist_val, replacement=True, num_samples=self.batch_size * 1000
+                self.mnist_val, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
 
@@ -258,6 +260,6 @@ class MnistDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.mnist_test, replacement=True, num_samples=self.batch_size * 1000
+                self.mnist_test, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
