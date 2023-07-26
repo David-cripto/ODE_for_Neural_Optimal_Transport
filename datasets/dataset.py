@@ -74,6 +74,7 @@ class CelebDataModule(pl.LightningDataModule):
         batch_size: int = 64,
         device: str = "cuda",
         num_workers: int = multiprocessing.cpu_count(),
+        batches_per_epoch: int = 100
     ):
         super().__init__()
         self.img_dir = img_dir
@@ -83,6 +84,7 @@ class CelebDataModule(pl.LightningDataModule):
 
         self.transform = T.Compose([T.Resize((224, 224)), T.ToTensor()])
         self.sampler = RandomSampler()
+        self.batches_per_epoch = batches_per_epoch
 
     def setup(self, stage=None):
         # Assign train/val datasets
@@ -107,7 +109,7 @@ class CelebDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.celeb_train, replacement=True, num_samples=self.batch_size * 1000
+                self.celeb_train, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
 
@@ -119,7 +121,7 @@ class CelebDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.celeb_val, replacement=True, num_samples=self.batch_size * 1000
+                self.celeb_val, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
 
@@ -131,7 +133,7 @@ class CelebDataModule(pl.LightningDataModule):
             pin_memory=True,
             pin_memory_device=self.device,
             sampler=RandomSampler(
-                self.celeb_test, replacement=True, num_samples=self.batch_size * 1000
+                self.celeb_test, replacement=True, num_samples=self.batch_size * self.batches_per_epoch
             ),
         )
 

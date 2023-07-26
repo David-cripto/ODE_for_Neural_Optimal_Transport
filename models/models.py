@@ -350,7 +350,7 @@ class ODEModel(nn.Module):
     def forward(self, t, x):
         self.num_solver_steps += 1
         # TODO: positional + condtional instance normalization(diffusions)
-        return self.nn(x, t.repeat(x.shape[0]))
+        return self.nn(t.repeat(x.shape[0]), x)
 
 
 class ODEBlock(nn.Module):
