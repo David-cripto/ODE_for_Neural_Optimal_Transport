@@ -338,7 +338,7 @@ class Unet(nn.Module):
 class ODEModel(nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.nn = Unet(28, dim_mults = (1, 2, 4))
+        self.nn = Unet(16)
         self.num_solver_steps = 0
 
     def forward(self, t, x):
