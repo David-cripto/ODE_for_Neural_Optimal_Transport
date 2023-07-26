@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import collections as mc
 from .tools import ewma, freeze
-import ot
-import seaborn as sns
+# import ot
+# import seaborn as sns
 
 import torch
 import gc

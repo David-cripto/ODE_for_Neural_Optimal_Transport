@@ -8,7 +8,6 @@ import typing as tp
 import pytorch_lightning as pl
 import torch.nn.functional as F
 import torchvision
-from dpipe import layers
 from einops import rearrange, reduce
 from functools import partial
 import math
@@ -218,7 +217,8 @@ class Unet(nn.Module):
         resnet_block_groups=4,
     ):
         super().__init__()
-
+        
+        self.nfe = 0
         # determine dimensions
         self.channels = channels
         self.self_condition = self_condition
@@ -234,6 +234,7 @@ class Unet(nn.Module):
 
         # time embeddings
         time_dim = dim * 4
+        
 
         self.time_mlp = nn.Sequential(
             SinusoidalPositionEmbeddings(dim),
@@ -289,7 +290,12 @@ class Unet(nn.Module):
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
-    def forward(self, x, time, x_self_cond=None):
+    def forward(self, time, x, x_self_cond=None):
+        
+        if len(time.shape) == 0:
+            time = torch.tensor([time]).to(x)
+            
+        self.nfe += 1
         if self.self_condition:
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
             x = torch.cat((x_self_cond, x), dim=1)
@@ -441,7 +447,7 @@ class NeuralTransfer(pl.LightningModule):
         )
         self.transfer.ode_func.num_solver_steps = 0
 
-    def validation_step(self, batch, batch_idx) -> STEP_OUTPUT | None:
+    def validation_step(self, batch, batch_idx):
         if batch_idx == 0:
             self.regularize.eval(), self.transfer.eval()
             
