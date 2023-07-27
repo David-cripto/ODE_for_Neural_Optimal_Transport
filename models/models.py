@@ -14,8 +14,10 @@ import math
 from einops.layers.torch import Rearrange
 from inspect import isfunction
 
+
 def exists(x):
     return x is not None
+
 
 def default(val, d):
     if exists(val):
@@ -94,7 +96,8 @@ class SinusoidalPositionEmbeddings(nn.Module):
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
         return embeddings
-    
+
+
 class Block(nn.Module):
     def __init__(self, dim, dim_out, groups=8):
         super().__init__()
@@ -166,6 +169,7 @@ class Attention(nn.Module):
         out = rearrange(out, "b h (x y) d -> b (h d) x y", x=h, y=w)
         return self.to_out(out)
 
+
 class LinearAttention(nn.Module):
     def __init__(self, dim, heads=4, dim_head=32):
         super().__init__()
@@ -174,8 +178,7 @@ class LinearAttention(nn.Module):
         hidden_dim = dim_head * heads
         self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias=False)
 
-        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1), 
-                                    nn.GroupNorm(1, dim))
+        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1), nn.GroupNorm(1, dim))
 
     def forward(self, x):
         b, c, h, w = x.shape
@@ -193,6 +196,7 @@ class LinearAttention(nn.Module):
         out = torch.einsum("b h d e, b h d n -> b h e n", context, q)
         out = rearrange(out, "b h c (x y) -> b (h c) x y", h=self.heads, x=h, y=w)
         return self.to_out(out)
+
 
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
@@ -217,7 +221,7 @@ class Unet(nn.Module):
         resnet_block_groups=4,
     ):
         super().__init__()
-        
+
         self.nfe = 0
         # determine dimensions
         self.channels = channels
@@ -225,7 +229,9 @@ class Unet(nn.Module):
         input_channels = channels * (2 if self_condition else 1)
 
         init_dim = default(init_dim, dim)
-        self.init_conv = nn.Conv2d(input_channels, init_dim, 1, padding=0) # changed to 1 and 0 from 7,3
+        self.init_conv = nn.Conv2d(
+            input_channels, init_dim, 1, padding=0
+        )  # changed to 1 and 0 from 7,3
 
         dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
@@ -234,7 +240,6 @@ class Unet(nn.Module):
 
         # time embeddings
         time_dim = dim * 4
-        
 
         self.time_mlp = nn.Sequential(
             SinusoidalPositionEmbeddings(dim),
@@ -291,10 +296,9 @@ class Unet(nn.Module):
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
     def forward(self, time, x, x_self_cond=None):
-        
         if len(time.shape) == 0:
             time = torch.tensor([time]).to(x)
-            
+
         self.nfe += 1
         if self.self_condition:
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
@@ -316,8 +320,6 @@ class Unet(nn.Module):
             h.append(x)
 
             x = downsample(x)
-        
-
 
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
@@ -333,12 +335,10 @@ class Unet(nn.Module):
 
             x = upsample(x)
 
-
         x = torch.cat((x, r), dim=1)
 
         x = self.final_res_block(x, t)
         return self.final_conv(x)
-
 
 
 class ODEModel(nn.Module):
@@ -353,6 +353,20 @@ class ODEModel(nn.Module):
         return self.nn(t.repeat(x.shape[0]), x)
 
 
+class ODEModel2(nn.Module):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.nn = Unet(16)
+        self.num_solver_steps = 0
+
+    def forward(self, t, x):
+        self.num_solver_steps += 1
+        # TODO: positional + condtional instance normalization(diffusions)
+        res = self.nn(t, x[: x.shape[0] // 2])
+        res2 = torch.cat([res, res.square()], dim=0)
+        return res2
+
+
 class ODEBlock(nn.Module):
     def __init__(
         self,
@@ -365,9 +379,23 @@ class ODEBlock(nn.Module):
     def forward(self, x):
         # TODO: restrict number steps of solvers
         # TODO: track number steps of solvers
-        return odeint(y0=x, t=self.t.to(x), func=self.ode_func)[
-            1
-        ]
+        return odeint(y0=x, t=self.t.to(x), func=self.ode_func)[1]
+
+
+class ODEBlock2(nn.Module):
+    def __init__(
+        self,
+        time: tp.Optional[float] = 1,
+    ) -> None:
+        super().__init__()
+        self.t = torch.tensor([0, time])
+        self.ode_func = ODEModel2()
+
+    def forward(self, x):
+        # TODO: restrict number steps of solvers
+        # TODO: track number steps of solvers
+        expand_x = torch.cat((x, torch.zeros(x.shape).type_as(x)), dim=0)
+        return odeint(y0=expand_x, t=self.t.to(x), func=self.ode_func)[1]
 
 
 class SimpleFunc(nn.Module):
@@ -386,20 +414,26 @@ class SimpleFunc(nn.Module):
 
 
 class NeuralTransfer(pl.LightningModule):
-    def __init__(self, TransferFunc, RegulaizerFunc, lr: float = 2e-5) -> None:
+    def __init__(
+        self, TransferFunc, RegulaizerFunc, lr: float = 2e-5, version: str = "2"
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.automatic_optimization = False
-            
+
         self.transfer = TransferFunc()
         self.regularize = RegulaizerFunc()
 
         # TODO: Maybe somewhere has better idea how to realize that
         self.n_train = 0
         self.n_limit = 11
+        self.version = version
 
     def forward(self, x):
-        return self.transfer(x)
+        if self.version == "1":
+            return self.transfer(x)
+        if self.version == "2":
+            return self.transfer(x)[: x.shape[0] // 2]
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         imgs_p, imgs_q = batch
@@ -407,17 +441,20 @@ class NeuralTransfer(pl.LightningModule):
 
         if self.n_train < self.n_limit:
             self.regularize.eval(), self.transfer.train()
-            
+
             self.toggle_optimizer(optimizer_g)
-            generated_imgs = self(imgs_p)
-            mse_loss = F.mse_loss(generated_imgs, imgs_p)
-            self.log("mse_loss", mse_loss, prog_bar=True)
-            
-            
-            g_loss = (
-                mse_loss
-                - self.regularize(generated_imgs).mean()
-            )
+            generated_imgs = self.transfer(imgs_p)
+
+            if self.version == "1":
+                g_loss = (
+                    F.mse_loss(generated_imgs, imgs_p)
+                    - self.regularize(generated_imgs).mean()
+                )
+            elif self.version == "2":
+                g_loss = (
+                    (generated_imgs[generated_imgs.shape[0] // 2 :]).mean()
+                    - self.regularize(generated_imgs).mean()
+                )
             self.log("g_loss", g_loss, prog_bar=True)
             self.manual_backward(g_loss)
             optimizer_g.step()
@@ -426,7 +463,7 @@ class NeuralTransfer(pl.LightningModule):
             self.n_train += 1
         else:
             self.regularize.train(), self.transfer.eval()
-            
+
             self.toggle_optimizer(optimizer_d)
             d_loss = (
                 self.regularize(self(imgs_p).detach()).mean()
@@ -450,7 +487,7 @@ class NeuralTransfer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         if batch_idx == 0:
             self.regularize.eval(), self.transfer.eval()
-            
+
             imgs_p, imgs_q = batch
             true_imgs = imgs_p[:2]
             grid = torchvision.utils.make_grid(true_imgs)
