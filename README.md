@@ -15,7 +15,7 @@ $$T(x) = x_0 + \int\limits_0^1 V_{\theta}(x(t), t)dt$$
 
 В ходе экспериментов, для которых использовалась библиотека [torchdyn]([url](https://torchdyn.org)https://torchdyn.org), выяснилось, что регуляризация хоть и выпрямляет траектории, но мешает обучению, поэтому в дальнейшем была использована функция потерь:
 
-$$\max_f\min_V \Big\{ \mathbb{E} [\int_0^1||V(x(t), t)||^2 dt] + \int_{\mathcal{Y}} f(y) d\mathbb{Q}(y) - \int_\mathcal{X} f(T(x))d\mathbb{P}(x)\Big\},
+$$\max_f\min_V \left\{ \mathbb{E} [\int_0^1||V(x(t), t)||^2 dt] + \int_{\mathcal{Y}} f(y) d\mathbb{Q}(y) - \int_\mathcal{X} f(T(x))d\mathbb{P}(x)\right\},
 $$
 
 Это нововведение позволило нам добиться прямых траекторий при обучении модели и обратимости.
