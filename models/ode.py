@@ -66,8 +66,11 @@ class RegDynamics(nn.Module):
     def __init__(self, odefunc):
         super(RegDynamics, self).__init__()    
         self.odefunc = odefunc 
+        self.nfe = 0
         
     def forward(self, t, x, args=None): 
+        # print('t= ', t)
+        self.nfe += 1
         res = self.odefunc(t, x[:x.shape[0]//2])
         # res2 = torch.mean(res.square(), dim = tuple(range(1, len(res.shape))))
         res2 = torch.cat([res, res.square()], dim = 0)
@@ -75,13 +78,7 @@ class RegDynamics(nn.Module):
         # print(res2.shape)
         return res2
     
-    @property
-    def nfe(self):
-        return self.odefunc.nfe
-
-    @nfe.setter
-    def nfe(self, value):
-        self.odefunc.nfe = value    
+    
     
     
 class ODEBlock2(nn.Module):
