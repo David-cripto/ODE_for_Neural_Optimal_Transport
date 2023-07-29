@@ -2,6 +2,12 @@
 
 Репозиторий проекта по применению [Neural ODE]([url](https://arxiv.org/abs/1806.07366)) к хадаче [Оптимального Транспорта]([url](https://arxiv.org/pdf/2201.12220.pdf)).
 
+## Команда
+- Никита Гущин (руководитель)
+- [Давид Ли]([url](https://github.com/David-cripto))
+- [Петр Чижов]([url](https://github.com/PeterChizhov))
+- [Эльфат Сабитов]([url](https://github.com/MarioAuditore))
+
 ## Введение
 Задачу ОТ можно формализовать как:
 
