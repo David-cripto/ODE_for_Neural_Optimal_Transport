@@ -4,12 +4,12 @@
 
 ## Команда
 - Никита Гущин (руководитель)
-- [Давид Ли]([url](https://github.com/David-cripto))
+- [Давид Ли](https://github.com/David-cripto)
 - [Петр Чижов]([url](https://github.com/PeterChizhov))
 - [Эльфат Сабитов]([url](https://github.com/MarioAuditore))
 
 ## Введение
-Задачу ОТ можно формализовать как:
+Задачу ОТ можно формализовать :
 
 $$\max_f\min_T \int_{\mathcal{X}} c(x, T(x))d\mathbb{P}(x) + \int_{\mathcal{Y}} f(y) d\mathbb{Q}(y) - \int_{\mathcal{X}} f(T(x))d\mathbb{P}(x)$$
 
@@ -19,7 +19,7 @@ $$T(x) = x_0 + \int\limits_0^1 V_{\theta}(x(t), t)dt$$
 
 Ограничение на кривизну: $ \dfrac{d^2T(x)}{dt^2} = 0$
 
-В ходе экспериментов, для которых использовалась библиотека [torchdyn]([url](https://torchdyn.org)https://torchdyn.org), выяснилось, что регуляризация хоть и выпрямляет траектории, но мешает обучению, поэтому в дальнейшем была использована функция потерь:
+В ходе экспериментов, для которых использовалась библиотека [torchdyn](https://torchdyn.org), выяснилось, что регуляризация хоть и выпрямляет траектории, но мешает обучению, поэтому в дальнейшем была использована функция потерь:
 
 $$\max_f\min_V \{ \mathbb{E} [\int_0^1||V(x(t), t)||^2 dt] + \int_{\mathcal{Y}} f(y) d\mathbb{Q}(y) - \int_\mathcal{X} f(T(x))d\mathbb{P}(x) \},
 $$
