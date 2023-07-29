@@ -27,10 +27,8 @@ $$
 Это нововведение позволило нам добиться прямых траекторий при обучении модели и обратимости.
 
 
-<p>
-    <img width="793" alt="image" src="https://github.com/David-cripto/ODE_for_Neural_Optimal_Transport/assets/57262352/89469949-7af9-4706-97d2-af63da9c67fd">
-    <em>8 gaussians -> 2 moons</em>
-</p>
+<img width="793" alt="image" src="https://github.com/David-cripto/ODE_for_Neural_Optimal_Transport/assets/57262352/89469949-7af9-4706-97d2-af63da9c67fd">
+    
 
 
 ## Структура
